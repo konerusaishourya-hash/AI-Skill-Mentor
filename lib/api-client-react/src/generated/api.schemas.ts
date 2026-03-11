@@ -8,3 +8,19 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface GenerateRoadmapRequest {
+  /** The skill the user wants to learn */
+  skill: string;
+}
+
+export interface RoadmapTask {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface GenerateRoadmapResponse {
+  skill: string;
+  tasks: RoadmapTask[];
+}

@@ -1,0 +1,15 @@
+packages:
+  "framer-motion": "For smooth checklist, layout, and progress animations"
+  "canvas-confetti": "To celebrate when all tasks are completed"
+  "@types/canvas-confetti": "Types for canvas-confetti"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to merge Tailwind classes safely"
+
+images:
+  - path: "artifacts/ai-skill-mentor/public/images/hero-glow.png"
+    description: "Soft, minimal abstract gradient mesh background in subtle blues and clean whites, professional and focused, 8k resolution, smooth transitions"
+    aspect_ratio: "16:9"
+
+notes:
+  - App manages checklist completion state locally in the component.
+  - Implements an elegant light theme featuring 'Outfit' and 'DM Sans' fonts.

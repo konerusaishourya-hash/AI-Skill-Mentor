@@ -14,3 +14,22 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Uses AI to generate a list of learning tasks for the given skill
+ * @summary Generate a learning roadmap for a skill
+ */
+export const GenerateRoadmapBody = zod.object({
+  skill: zod.string().describe("The skill the user wants to learn"),
+});
+
+export const GenerateRoadmapResponse = zod.object({
+  skill: zod.string(),
+  tasks: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      description: zod.string(),
+    }),
+  ),
+});

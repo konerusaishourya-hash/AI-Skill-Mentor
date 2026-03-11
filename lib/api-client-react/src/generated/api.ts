@@ -5,18 +5,25 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  GenerateRoadmapRequest,
+  GenerateRoadmapResponse,
+  HealthStatus,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +106,90 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Uses AI to generate a list of learning tasks for the given skill
+ * @summary Generate a learning roadmap for a skill
+ */
+export const getGenerateRoadmapUrl = () => {
+  return `/api/roadmap/generate`;
+};
+
+export const generateRoadmap = async (
+  generateRoadmapRequest: GenerateRoadmapRequest,
+  options?: RequestInit,
+): Promise<GenerateRoadmapResponse> => {
+  return customFetch<GenerateRoadmapResponse>(getGenerateRoadmapUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(generateRoadmapRequest),
+  });
+};
+
+export const getGenerateRoadmapMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateRoadmap>>,
+    TError,
+    { data: BodyType<GenerateRoadmapRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateRoadmap>>,
+  TError,
+  { data: BodyType<GenerateRoadmapRequest> },
+  TContext
+> => {
+  const mutationKey = ["generateRoadmap"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateRoadmap>>,
+    { data: BodyType<GenerateRoadmapRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateRoadmap(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateRoadmapMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateRoadmap>>
+>;
+export type GenerateRoadmapMutationBody = BodyType<GenerateRoadmapRequest>;
+export type GenerateRoadmapMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Generate a learning roadmap for a skill
+ */
+export const useGenerateRoadmap = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateRoadmap>>,
+    TError,
+    { data: BodyType<GenerateRoadmapRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateRoadmap>>,
+  TError,
+  { data: BodyType<GenerateRoadmapRequest> },
+  TContext
+> => {
+  return useMutation(getGenerateRoadmapMutationOptions(options));
+};

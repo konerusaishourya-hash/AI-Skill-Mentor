@@ -1,6 +1,5 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
   description: API specification
@@ -10,6 +9,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: roadmap
+    description: Skill roadmap operations
 paths:
   /healthz:
     get:
@@ -24,6 +25,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /roadmap/generate:
+    post:
+      operationId: generateRoadmap
+      tags: [roadmap]
+      summary: Generate a learning roadmap for a skill
+      description: Uses AI to generate a list of learning tasks for the given skill
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateRoadmapRequest"
+      responses:
+        "200":
+          description: Generated roadmap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateRoadmapResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +53,36 @@ components:
           type: string
       required:
         - status
-
+    GenerateRoadmapRequest:
+      type: object
+      properties:
+        skill:
+          type: string
+          description: The skill the user wants to learn
+      required:
+        - skill
+    RoadmapTask:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+      required:
+        - id
+        - title
+        - description
+    GenerateRoadmapResponse:
+      type: object
+      properties:
+        skill:
+          type: string
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoadmapTask"
+      required:
+        - skill
+        - tasks

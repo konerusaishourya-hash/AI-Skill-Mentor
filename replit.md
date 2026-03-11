@@ -4,6 +4,20 @@
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
 
+## Applications
+
+### AI Skill Mentor (`artifacts/ai-skill-mentor`)
+- React + Vite web app at previewPath `/`
+- Users enter a skill they want to learn and click "Generate Roadmap"
+- AI (OpenAI via Replit AI Integrations) generates 8-10 learning tasks
+- Tasks are shown as a checklist; checking them off updates a progress bar
+- Uses framer-motion for animations, canvas-confetti for completion celebration
+
+### API Server (`artifacts/api-server`)
+- Express 5 API server
+- `POST /api/roadmap/generate` — generates a learning roadmap using OpenAI gpt-5.2
+- Uses `AI_INTEGRATIONS_OPENAI_BASE_URL` and `AI_INTEGRATIONS_OPENAI_API_KEY` env vars (Replit AI Integrations)
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces
