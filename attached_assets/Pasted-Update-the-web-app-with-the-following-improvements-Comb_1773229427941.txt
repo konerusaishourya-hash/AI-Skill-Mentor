@@ -1,0 +1,71 @@
+Update the web app with the following improvements. Combine the new task progression system and multi-page navigation while keeping all current features intact.
+
+PART 1 — Task System (Single Active Task)
+
+Single active task:
+Only one task should be active at a time. The user should only see one current task they need to complete.
+
+Task progression:
+When the user completes the current task (checks the checkbox), that task should automatically move to a section called "Completed Tasks".
+
+Unlock next task:
+After completing the current task, the next task from the generated roadmap should automatically appear as the new active task.
+
+Completed tasks section:
+Create a "Completed Tasks" section below the current task. It should list all finished tasks as a simple list with check marks.
+
+Data persistence:
+Use browser localStorage to store:
+
+the current active task
+
+the completed tasks
+
+the full roadmap tasks
+
+If the page refreshes, everything should load exactly as it was before.
+
+PART 2 — Multi-Page Navigation
+
+Navigation bar:
+Add a simple navigation bar at the top of the website with two links:
+
+Home
+
+Learn
+
+The navigation bar should stay visible at the top.
+
+Home page:
+Create a Home page introducing the product. Include:
+
+A title explaining that this tool helps users learn skills step-by-step using AI
+
+A short description of how the system works
+
+A button labeled "Start Learning" that navigates to the Learn page
+
+Learn page:
+Move the current working interface to the Learn page. This includes:
+
+AI roadmap generation
+
+task system
+
+dropdown explanations (why + estimated time)
+
+progress bar
+
+celebration popup
+
+localStorage progress saving
+
+Navigation behavior:
+Clicking "Home" should show the Home page.
+Clicking "Learn" should open the learning interface.
+
+Design requirements:
+Keep the design simple, clean, and responsive. The new pages should not break the existing layout or functionality.
+
+Do not remove existing features:
+Ensure all existing features continue working exactly as before while extending the app with the new task system and multi-page structure.
