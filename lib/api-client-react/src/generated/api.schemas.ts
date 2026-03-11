@@ -18,6 +18,10 @@ export interface RoadmapTask {
   id: string;
   title: string;
   description: string;
+  /** Why this step is important (30-40 words) */
+  importance: string;
+  /** Estimated hours to complete this step */
+  estimatedHours: number;
 }
 
 export interface GenerateRoadmapResponse {

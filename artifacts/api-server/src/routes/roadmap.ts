@@ -20,7 +20,7 @@ router.post("/roadmap/generate", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are a learning roadmap generator. When given a skill, generate a practical, step-by-step learning roadmap with exactly 8-10 tasks. Each task should be actionable and specific. Return a JSON array of tasks, each with fields: id (string, e.g. "task-1"), title (short action phrase), description (1-2 sentence explanation of what to do/learn). Return ONLY valid JSON with no markdown or extra text.`,
+          content: `You are a learning roadmap generator. When given a skill, generate a practical, step-by-step learning roadmap with exactly 8-10 tasks. Each task should be actionable and specific. Return a JSON array of tasks, each with these fields: id (string, e.g. "task-1"), title (short action phrase), description (1-2 sentence explanation of what to do/learn), importance (exactly 30-40 words explaining why this step matters in the learning journey), estimatedHours (a realistic number like 2, 4, 8, 16 — how many hours this step typically takes). Return ONLY valid JSON with no markdown or extra text.`,
         },
         {
           role: "user",

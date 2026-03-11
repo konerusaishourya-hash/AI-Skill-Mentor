@@ -70,10 +70,18 @@ components:
           type: string
         description:
           type: string
+        importance:
+          type: string
+          description: Why this step is important (30-40 words)
+        estimatedHours:
+          type: number
+          description: Estimated hours to complete this step
       required:
         - id
         - title
         - description
+        - importance
+        - estimatedHours
     GenerateRoadmapResponse:
       type: object
       properties:

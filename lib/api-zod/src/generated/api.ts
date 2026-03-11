@@ -30,6 +30,12 @@ export const GenerateRoadmapResponse = zod.object({
       id: zod.string(),
       title: zod.string(),
       description: zod.string(),
+      importance: zod
+        .string()
+        .describe("Why this step is important (30-40 words)"),
+      estimatedHours: zod
+        .number()
+        .describe("Estimated hours to complete this step"),
     }),
   ),
 });

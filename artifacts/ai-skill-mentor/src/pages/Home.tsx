@@ -5,13 +5,55 @@ import confetti from "canvas-confetti";
 import { useGenerateRoadmap, type RoadmapTask } from "@workspace/api-client-react";
 import { TaskCard } from "@/components/TaskCard";
 import { ProgressBar } from "@/components/ProgressBar";
-import { cn } from "@/lib/utils";
+
+const STORAGE_KEY = "ai-skill-mentor-state";
+
+interface SavedState {
+  skill: string;
+  tasks: RoadmapTask[];
+  completedIds: string[];
+}
+
+function loadSavedState(): SavedState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as SavedState;
+  } catch {
+    return null;
+  }
+}
+
+function saveState(skill: string, tasks: RoadmapTask[], completedIds: Set<string>) {
+  try {
+    const state: SavedState = {
+      skill,
+      tasks,
+      completedIds: Array.from(completedIds),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function clearState() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Ignore
+  }
+}
 
 export default function Home() {
-  const [skillInput, setSkillInput] = useState("");
-  const [currentSkill, setCurrentSkill] = useState("");
-  const [tasks, setTasks] = useState<RoadmapTask[]>([]);
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const saved = loadSavedState();
+
+  const [skillInput, setSkillInput] = useState(saved?.skill ?? "");
+  const [currentSkill, setCurrentSkill] = useState(saved?.skill ?? "");
+  const [tasks, setTasks] = useState<RoadmapTask[]>(saved?.tasks ?? []);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(
+    new Set(saved?.completedIds ?? [])
+  );
 
   const { mutate: generateRoadmap, isPending, error } = useGenerateRoadmap({
     mutation: {
@@ -22,6 +64,13 @@ export default function Home() {
       },
     },
   });
+
+  // Persist to localStorage whenever state changes
+  useEffect(() => {
+    if (tasks.length > 0) {
+      saveState(currentSkill, tasks, completedIds);
+    }
+  }, [tasks, currentSkill, completedIds]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -43,6 +92,7 @@ export default function Home() {
     setCurrentSkill("");
     setSkillInput("");
     setCompletedIds(new Set());
+    clearState();
   };
 
   // Trigger confetti when all tasks are completed
@@ -168,12 +218,12 @@ export default function Home() {
               </div>
 
               <div className="bg-card border border-border/60 rounded-3xl p-6 sm:p-8 shadow-xl shadow-black/5 mb-8">
-                <ProgressBar progress={progress} />
-                
+                <ProgressBar progress={progress} completed={completedIds.size} total={tasks.length} />
+
                 {isComplete && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                    animate={{ opacity: 1, height: 'auto', marginTop: 24 }}
+                    animate={{ opacity: 1, height: "auto", marginTop: 24 }}
                     className="p-4 bg-green-50 border border-green-200 rounded-xl text-green-800 text-center font-medium"
                   >
                     🎉 Congratulations! You've completed your roadmap for {currentSkill}.
@@ -188,6 +238,8 @@ export default function Home() {
                     index={index}
                     title={task.title}
                     description={task.description}
+                    importance={task.importance}
+                    estimatedHours={task.estimatedHours}
                     checked={completedIds.has(task.id)}
                     onToggle={() => toggleTask(task.id)}
                   />
