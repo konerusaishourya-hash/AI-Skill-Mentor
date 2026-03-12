@@ -32,7 +32,6 @@ export default function Home() {
         aria-hidden
         className="fixed top-0 left-0 w-full h-[600px] object-cover opacity-[0.35] mix-blend-multiply pointer-events-none"
       />
-
       <main className="relative z-10 flex-1 flex flex-col">
         {/* ── Hero ── */}
         <section className="flex-1 flex flex-col items-center justify-center text-center px-4 pt-32 pb-24 max-w-3xl mx-auto">
@@ -76,9 +75,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25, duration: 0.5 }}
           >
-            <h2 className="text-2xl font-display font-bold text-foreground text-center mb-10">
-              How it works
-            </h2>
+            <h2 className="text-2xl font-display font-bold text-foreground text-center mb-10">How do I use it?</h2>
 
             <div className="grid gap-5 sm:grid-cols-3">
               {steps.map(({ icon: Icon, title, description }, i) => (
