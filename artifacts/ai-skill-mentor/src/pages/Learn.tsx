@@ -10,6 +10,7 @@ import { useGenerateRoadmap } from "@workspace/api-client-react";
 import { TaskCard } from "@/components/TaskCard";
 import { CompletedTaskCard } from "@/components/CompletedTaskCard";
 import { ProgressBar } from "@/components/ProgressBar";
+import { SkillAutocomplete } from "@/components/SkillAutocomplete";
 import {
   loadSkillById, saveSkill, makeSkillId,
   LEVEL_LABELS, LEVEL_COLORS,
@@ -32,17 +33,6 @@ const LOADING_MESSAGES = [
   "Almost ready!",
 ];
 
-const SKILL_EXAMPLES = [
-  "React Native",
-  "Copywriting",
-  "French",
-  "Machine Learning",
-  "Guitar",
-  "UI Design",
-  "Photography",
-  "Python",
-];
-
 export default function Learn() {
   const params = useParams<{ id?: string }>();
   const [, navigate] = useLocation();
@@ -50,15 +40,6 @@ export default function Learn() {
   const [skillInput, setSkillInput] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<SkillLevel>("beginner");
   const [entry, setEntry] = useState<SkillEntry | null>(null);
-
-  // Cycling placeholder
-  const [placeholderIdx, setPlaceholderIdx] = useState(0);
-  const [inputFocused, setInputFocused] = useState(false);
-  useEffect(() => {
-    if (inputFocused) return;
-    const t = setInterval(() => setPlaceholderIdx((i) => (i + 1) % SKILL_EXAMPLES.length), 2200);
-    return () => clearInterval(t);
-  }, [inputFocused]);
 
   // Cycling loading message
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
@@ -163,7 +144,7 @@ export default function Learn() {
       <img
         src={`${import.meta.env.BASE_URL}images/hero-glow.png`}
         alt="" aria-hidden
-        className="absolute top-0 left-0 w-full h-[600px] object-cover opacity-[0.35] mix-blend-multiply pointer-events-none"
+        className="absolute top-0 left-0 w-full h-[600px] object-cover opacity-[0.35] dark:opacity-[0.08] mix-blend-multiply dark:mix-blend-overlay pointer-events-none"
       />
 
       {/* Toast */}
@@ -211,22 +192,14 @@ export default function Learn() {
               </p>
 
               <form onSubmit={handleSubmit} className="w-full max-w-lg flex flex-col gap-5">
-                {/* Skill input */}
+                {/* Skill input with autocomplete */}
                 <div className="relative group">
-                  <div className="absolute inset-0 bg-primary/5 blur-2xl rounded-full transition-opacity duration-500 opacity-0 group-hover:opacity-100" />
-                  <AnimatePresence mode="wait">
-                    <motion.input
-                      key={placeholderIdx}
-                      type="text"
-                      value={skillInput}
-                      onChange={(e) => setSkillInput(e.target.value)}
-                      onFocus={() => setInputFocused(true)}
-                      onBlur={() => setInputFocused(false)}
-                      placeholder={`e.g. ${SKILL_EXAMPLES[placeholderIdx]}…`}
-                      className="relative w-full px-6 py-5 rounded-2xl bg-card border-2 border-border/50 text-lg shadow-lg shadow-black/5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 focus:ring-4 focus:ring-primary/10 transition-all duration-300"
-                      autoFocus
-                    />
-                  </AnimatePresence>
+                  <div className="absolute inset-0 bg-primary/5 blur-2xl rounded-full transition-opacity duration-500 opacity-0 group-hover:opacity-100 pointer-events-none" />
+                  <SkillAutocomplete
+                    value={skillInput}
+                    onChange={setSkillInput}
+                    autoFocus
+                  />
                 </div>
 
                 {/* Level selector */}
@@ -375,7 +348,7 @@ export default function Learn() {
                   <motion.div
                     initial={{ opacity: 0, height: 0, marginTop: 0 }}
                     animate={{ opacity: 1, height: "auto", marginTop: 24 }}
-                    className="p-4 bg-green-50 border border-green-200 rounded-xl text-green-800 text-center font-medium"
+                    className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-green-800 dark:text-green-300 text-center font-medium"
                   >
                     🎉 Congratulations! You've completed your full {entry.level} roadmap for <strong>{entry.skill}</strong>.
                   </motion.div>
@@ -444,7 +417,7 @@ export default function Learn() {
                       key={completedTasks.length}
                       initial={{ scale: 1.4 }}
                       animate={{ scale: 1 }}
-                      className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold"
+                      className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-xs font-bold"
                     >
                       {completedTasks.length}
                     </motion.span>

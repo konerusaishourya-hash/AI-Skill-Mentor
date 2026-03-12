@@ -31,7 +31,7 @@ export default function Home() {
       <img
         src={`${import.meta.env.BASE_URL}images/hero-glow.png`}
         alt="" aria-hidden
-        className="fixed top-0 left-0 w-full h-[600px] object-cover opacity-[0.35] mix-blend-multiply pointer-events-none"
+        className="fixed top-0 left-0 w-full h-[600px] object-cover opacity-[0.35] dark:opacity-[0.08] mix-blend-multiply dark:mix-blend-overlay pointer-events-none"
       />
 
       {/* Floating skill pills */}

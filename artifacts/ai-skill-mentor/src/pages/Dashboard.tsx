@@ -33,7 +33,7 @@ export default function Dashboard() {
       <img
         src={`${import.meta.env.BASE_URL}images/hero-glow.png`}
         alt="" aria-hidden
-        className="fixed top-0 left-0 w-full h-[400px] object-cover opacity-[0.25] mix-blend-multiply pointer-events-none"
+        className="fixed top-0 left-0 w-full h-[400px] object-cover opacity-[0.25] dark:opacity-[0.07] mix-blend-multiply dark:mix-blend-overlay pointer-events-none"
       />
 
       <main className="relative z-10 w-full max-w-4xl mx-auto px-4 pt-28 pb-20 sm:px-6">
