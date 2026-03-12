@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ChevronDown, Clock, Lightbulb } from "lucide-react";
+import { Check, ChevronDown, Clock, Lightbulb, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TaskCardProps {
@@ -11,138 +11,162 @@ interface TaskCardProps {
   checked: boolean;
   onToggle: () => void;
   index: number;
+  stepNumber?: number;
+  totalSteps?: number;
 }
 
-export function TaskCard({ title, description, importance, estimatedHours, checked, onToggle, index }: TaskCardProps) {
-  const [expanded, setExpanded] = useState(false);
+export function TaskCard({
+  title,
+  description,
+  importance,
+  estimatedHours,
+  checked,
+  onToggle,
+  index,
+  stepNumber,
+  totalSteps,
+}: TaskCardProps) {
+  const [expanded, setExpanded] = useState(true);
+  const [completing, setCompleting] = useState(false);
 
-  const handleCheckboxClick = (e: React.MouseEvent) => {
+  const handleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onToggle();
+    if (completing) return;
+    setCompleting(true);
+    setTimeout(() => {
+      onToggle();
+      setCompleting(false);
+    }, 400);
   };
 
-  const handleDropdownClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setExpanded((prev) => !prev);
+  const formatTime = (hours: number) => {
+    if (hours < 1) return `${Math.round(hours * 60)} min`;
+    if (hours === 1) return "1 hour";
+    return `${hours} hours`;
   };
-
-  const hasDetails = importance || estimatedHours !== undefined;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.08 }}
+      initial={{ opacity: 0, y: 24, scale: 0.98 }}
+      animate={{
+        opacity: completing ? 0.6 : 1,
+        y: 0,
+        scale: completing ? 0.97 : 1,
+      }}
+      transition={{ duration: 0.4, delay: index * 0.06 }}
       className={cn(
-        "group relative rounded-2xl border-2 transition-all duration-300 shadow-lg",
+        "group relative rounded-2xl border-2 transition-all duration-300 shadow-lg overflow-hidden",
         checked
           ? "bg-primary/5 border-primary/30 shadow-primary/10"
-          : "bg-card border-border/50 hover:border-primary/20 hover:shadow-xl shadow-black/5"
+          : "bg-card border-border/40 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 shadow-black/5"
       )}
     >
-      {/* Main row */}
-      <div className="flex gap-5 items-start p-6">
-        {/* Checkbox */}
-        <button
-          onClick={handleCheckboxClick}
-          aria-label={checked ? "Mark incomplete" : "Mark complete"}
-          className={cn(
-            "mt-1 flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300",
-            checked
-              ? "bg-primary border-primary scale-110 shadow-md shadow-primary/20"
-              : "border-muted-foreground/30 hover:border-primary/50 active:scale-95"
+      {/* Top accent line */}
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/60 via-primary to-accent-foreground/60" />
+
+      {/* Step + time header */}
+      {(stepNumber !== undefined || estimatedHours !== undefined) && (
+        <div className="flex items-center justify-between px-6 pt-5 pb-0">
+          {stepNumber !== undefined && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-wide uppercase">
+              Step {stepNumber}{totalSteps ? ` of ${totalSteps}` : ""}
+            </span>
           )}
-        >
-          <Check
-            strokeWidth={3}
-            className={cn(
-              "w-4 h-4 text-primary-foreground transition-all duration-300",
-              checked ? "opacity-100 scale-100" : "opacity-0 scale-50"
-            )}
-          />
-        </button>
-
-        {/* Text */}
-        <div className="flex-1 min-w-0">
-          <h3
-            className={cn(
-              "text-xl font-display font-bold transition-colors duration-300",
-              checked ? "text-primary/70 line-through decoration-primary/30" : "text-foreground"
-            )}
-          >
-            {title}
-          </h3>
-          <p
-            className={cn(
-              "mt-1.5 text-base leading-relaxed transition-colors duration-300",
-              checked ? "text-muted-foreground/70" : "text-muted-foreground"
-            )}
-          >
-            {description}
-          </p>
+          {estimatedHours !== undefined && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-semibold ml-auto">
+              <Clock className="w-3 h-3" />
+              {formatTime(estimatedHours)}
+            </span>
+          )}
         </div>
+      )}
 
-        {/* Dropdown toggle */}
-        {hasDetails && (
+      {/* Main content */}
+      <div className="px-6 pt-4 pb-0">
+        <h3 className="text-xl font-display font-bold text-foreground leading-snug mb-2">
+          {title}
+        </h3>
+        <p className="text-base text-muted-foreground leading-relaxed">
+          {description}
+        </p>
+      </div>
+
+      {/* Why it matters – collapsible */}
+      {importance && (
+        <div className="px-6 mt-3">
           <button
-            onClick={handleDropdownClick}
-            aria-label={expanded ? "Collapse details" : "Expand details"}
-            className={cn(
-              "mt-1 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
-              "text-muted-foreground hover:text-foreground hover:bg-muted"
-            )}
+            onClick={() => setExpanded((p) => !p)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors mb-1"
           >
+            <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+            Why it matters
             <ChevronDown
               className={cn(
-                "w-5 h-5 transition-transform duration-300",
+                "w-3.5 h-3.5 transition-transform duration-200",
                 expanded && "rotate-180"
               )}
             />
           </button>
-        )}
-      </div>
+          <AnimatePresence initial={false}>
+            {expanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.22, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <p className="text-sm text-foreground/80 leading-relaxed pb-1 border-l-2 border-amber-300 pl-3">
+                  {importance}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
-      {/* Expandable details */}
-      <AnimatePresence>
-        {expanded && hasDetails && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
-            <div className="px-6 pb-6 pt-0">
-              <div className="border-t border-border/40 pt-4 space-y-3">
-                {importance && (
-                  <div className="flex gap-3 items-start">
-                    <div className="flex-shrink-0 mt-0.5 w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
-                      <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Why it matters</p>
-                      <p className="text-sm text-foreground leading-relaxed">{importance}</p>
-                    </div>
-                  </div>
-                )}
-                {estimatedHours !== undefined && (
-                  <div className="flex gap-3 items-center">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                      <Clock className="w-3.5 h-3.5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Estimated time</p>
-                      <p className="text-sm font-medium text-foreground">
-                        {estimatedHours} {estimatedHours === 1 ? "hour" : "hours"}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Mark as done button */}
+      <div className="px-6 pb-5 pt-4">
+        <motion.button
+          onClick={handleComplete}
+          disabled={completing}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.97 }}
+          className={cn(
+            "relative w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 overflow-hidden transition-all duration-300",
+            completing
+              ? "bg-green-500 text-white border-transparent"
+              : "bg-primary/5 hover:bg-primary text-primary hover:text-primary-foreground border-2 border-primary/25 hover:border-transparent hover:shadow-lg hover:shadow-primary/20"
+          )}
+        >
+          {/* Shimmer on hover */}
+          <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+
+          <AnimatePresence mode="wait">
+            {completing ? (
+              <motion.span
+                key="completing"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Done!
+              </motion.span>
+            ) : (
+              <motion.span
+                key="idle"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center gap-2"
+              >
+                <Check className="w-4 h-4" />
+                Mark as done
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </div>
     </motion.div>
   );
 }
