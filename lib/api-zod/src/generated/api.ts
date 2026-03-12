@@ -21,10 +21,14 @@ export const HealthCheckResponse = zod.object({
  */
 export const GenerateRoadmapBody = zod.object({
   skill: zod.string().describe("The skill the user wants to learn"),
+  level: zod
+    .enum(["beginner", "intermediate", "advanced"])
+    .describe("The user's current level for this skill"),
 });
 
 export const GenerateRoadmapResponse = zod.object({
   skill: zod.string(),
+  level: zod.string(),
   tasks: zod.array(
     zod.object({
       id: zod.string(),

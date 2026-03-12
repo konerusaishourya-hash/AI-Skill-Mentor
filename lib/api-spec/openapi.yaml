@@ -59,8 +59,13 @@ components:
         skill:
           type: string
           description: The skill the user wants to learn
+        level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+          description: The user's current level for this skill
       required:
         - skill
+        - level
     RoadmapTask:
       type: object
       properties:
@@ -87,10 +92,13 @@ components:
       properties:
         skill:
           type: string
+        level:
+          type: string
         tasks:
           type: array
           items:
             $ref: "#/components/schemas/RoadmapTask"
       required:
         - skill
+        - level
         - tasks

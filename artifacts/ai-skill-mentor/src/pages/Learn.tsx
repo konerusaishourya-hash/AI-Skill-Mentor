@@ -1,93 +1,90 @@
 import { useState, FormEvent, useEffect, useCallback } from "react";
+import { useParams, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2, ArrowRight, BookOpen, RotateCcw } from "lucide-react";
+import { Sparkles, Loader2, ArrowRight, BookOpen, RotateCcw, LayoutGrid } from "lucide-react";
 import confetti from "canvas-confetti";
-import { useGenerateRoadmap, type RoadmapTask } from "@workspace/api-client-react";
+import { useGenerateRoadmap } from "@workspace/api-client-react";
 import { TaskCard } from "@/components/TaskCard";
 import { CompletedTaskCard } from "@/components/CompletedTaskCard";
 import { ProgressBar } from "@/components/ProgressBar";
+import {
+  loadSkillById,
+  saveSkill,
+  makeSkillId,
+  LEVEL_LABELS,
+  LEVEL_COLORS,
+  type SkillEntry,
+  type SkillLevel,
+} from "@/lib/skillStorage";
+import { cn } from "@/lib/utils";
 
 // ─── Plan config ─────────────────────────────────────────────────────────────
-// Increase maxActiveTasks for subscribed users in the future.
 type UserPlan = "free" | "pro";
 const USER_PLAN: UserPlan = "free";
 const MAX_ACTIVE_TASKS: Record<UserPlan, number> = {
-  free: 1,   // Free users see one task at a time
+  free: 1,
   pro: Infinity,
 };
 const activeTaskLimit = MAX_ACTIVE_TASKS[USER_PLAN];
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "ai-skill-mentor-v3";
-
-interface MentorState {
-  skill: string;
-  allTasks: RoadmapTask[];
-  activeTaskIds: string[];
-  completedTaskIds: string[];
-}
-
-function loadState(): MentorState | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as MentorState;
-  } catch {
-    return null;
-  }
-}
-
-function persistState(s: MentorState) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-  } catch { /* ignore */ }
-}
-
-function clearPersistedState() {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch { /* ignore */ }
-}
-
-const EMPTY: MentorState = {
-  skill: "",
-  allTasks: [],
-  activeTaskIds: [],
-  completedTaskIds: [],
-};
+const LEVELS: SkillLevel[] = ["beginner", "intermediate", "advanced"];
 
 export default function Learn() {
-  const saved = loadState();
-  const [skillInput, setSkillInput] = useState(saved?.skill ?? "");
-  const [state, setState] = useState<MentorState>(saved ?? EMPTY);
+  const params = useParams<{ id?: string }>();
+  const [, navigate] = useLocation();
+
+  const [skillInput, setSkillInput] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState<SkillLevel>("beginner");
+  const [entry, setEntry] = useState<SkillEntry | null>(null);
+
+  // Load skill from URL param on mount / param change
+  useEffect(() => {
+    if (params.id) {
+      const loaded = loadSkillById(params.id);
+      if (loaded) {
+        setEntry(loaded);
+      }
+    } else {
+      setEntry(null);
+    }
+  }, [params.id]);
+
+  // Persist entry whenever it changes
+  useEffect(() => {
+    if (entry) saveSkill(entry);
+  }, [entry]);
 
   const { mutate: generateRoadmap, isPending, error } = useGenerateRoadmap({
     mutation: {
       onSuccess: (data) => {
-        const newState: MentorState = {
+        const newId = makeSkillId(data.skill, (data.level as SkillLevel) ?? selectedLevel);
+        const newEntry: SkillEntry = {
+          id: newId,
           skill: data.skill,
+          level: (data.level as SkillLevel) ?? selectedLevel,
           allTasks: data.tasks,
           activeTaskIds: data.tasks.slice(0, activeTaskLimit).map((t) => t.id),
           completedTaskIds: [],
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
         };
-        setState(newState);
-        persistState(newState);
+        saveSkill(newEntry);
+        setEntry(newEntry);
+        navigate(`/learn/${newId}`, { replace: true });
       },
     },
   });
 
-  useEffect(() => {
-    if (state.allTasks.length > 0) persistState(state);
-  }, [state]);
-
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!skillInput.trim() || isPending) return;
-    generateRoadmap({ data: { skill: skillInput } });
+    generateRoadmap({ data: { skill: skillInput, level: selectedLevel } });
   };
 
   const completeTask = useCallback((taskId: string) => {
-    setState((prev) => {
+    setEntry((prev) => {
+      if (!prev) return prev;
       const newCompleted = [...prev.completedTaskIds, taskId];
       const newActive = prev.activeTaskIds.filter((id) => id !== taskId);
       const usedIds = new Set([...newActive, ...newCompleted]);
@@ -103,14 +100,15 @@ export default function Learn() {
   }, []);
 
   const handleReset = () => {
-    setState(EMPTY);
+    setEntry(null);
     setSkillInput("");
-    clearPersistedState();
+    navigate("/learn", { replace: true });
   };
 
+  // Confetti on full completion
   useEffect(() => {
-    const { allTasks, completedTaskIds } = state;
-    if (allTasks.length > 0 && completedTaskIds.length === allTasks.length) {
+    if (!entry) return;
+    if (entry.allTasks.length > 0 && entry.completedTaskIds.length === entry.allTasks.length) {
       confetti({
         particleCount: 150,
         spread: 80,
@@ -119,15 +117,17 @@ export default function Learn() {
         disableForReducedMotion: true,
       });
     }
-  }, [state.completedTaskIds.length, state.allTasks.length]);
+  }, [entry?.completedTaskIds.length, entry?.allTasks.length]);
 
-  const { skill: currentSkill, allTasks, activeTaskIds, completedTaskIds } = state;
-  const activeTasks = allTasks.filter((t) => activeTaskIds.includes(t.id));
-  const completedTasks = allTasks.filter((t) => completedTaskIds.includes(t.id));
+  // Derived state
+  const allTasks = entry?.allTasks ?? [];
+  const activeTasks = allTasks.filter((t) => entry?.activeTaskIds.includes(t.id));
+  const completedTasks = allTasks.filter((t) => entry?.completedTaskIds.includes(t.id));
   const queuedCount = allTasks.length - activeTasks.length - completedTasks.length;
   const progress = allTasks.length > 0 ? (completedTasks.length / allTasks.length) * 100 : 0;
   const isAllComplete = allTasks.length > 0 && completedTasks.length === allTasks.length;
   const currentTask = activeTasks[0] ?? null;
+  const hasRoadmap = allTasks.length > 0;
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col items-center">
@@ -141,47 +141,76 @@ export default function Learn() {
       <main className="relative z-10 w-full max-w-3xl mx-auto px-4 pt-28 pb-20 sm:px-6 lg:px-8 flex flex-col">
         <AnimatePresence mode="wait">
 
-          {/* ── Empty state: generate form ── */}
-          {allTasks.length === 0 && !isPending && (
+          {/* ── Generation form ── */}
+          {!hasRoadmap && !isPending && (
             <motion.div
               key="empty"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.45, ease: "easeOut" }}
-              className="flex flex-col items-center justify-center pt-12 sm:pt-20 text-center"
+              className="flex flex-col items-center justify-center pt-8 sm:pt-16"
             >
-              <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-8">
+              <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-6">
                 <BookOpen className="w-8 h-8 text-primary" />
               </div>
-              <h1 className="text-4xl md:text-5xl font-display font-extrabold text-foreground mb-4 leading-tight">
+              <h1 className="text-4xl md:text-5xl font-display font-extrabold text-foreground mb-3 leading-tight text-center">
                 What do you want to learn?
               </h1>
-              <p className="text-lg text-muted-foreground mb-10 max-w-md">
-                Enter a skill and we'll build a step-by-step AI roadmap just for you.
+              <p className="text-lg text-muted-foreground mb-10 max-w-md text-center">
+                Enter a skill and your experience level, and we'll build a tailored AI roadmap.
               </p>
 
-              <form onSubmit={handleSubmit} className="w-full max-w-lg relative group">
-                <div className="absolute inset-0 bg-primary/5 blur-xl rounded-full transition-opacity duration-500 opacity-0 group-hover:opacity-100" />
-                <div className="relative flex items-center">
+              <form onSubmit={handleSubmit} className="w-full max-w-lg flex flex-col gap-5">
+                {/* Skill input */}
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-primary/5 blur-xl rounded-full transition-opacity duration-500 opacity-0 group-hover:opacity-100" />
                   <input
                     type="text"
                     value={skillInput}
                     onChange={(e) => setSkillInput(e.target.value)}
                     placeholder="e.g. React Native, Copywriting, French..."
-                    className="w-full pl-6 pr-36 py-5 rounded-2xl bg-card border-2 border-border/50 text-lg shadow-lg shadow-black/5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all duration-300"
+                    className="relative w-full px-6 py-5 rounded-2xl bg-card border-2 border-border/50 text-lg shadow-lg shadow-black/5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all duration-300"
                     autoFocus
                   />
-                  <button
-                    type="submit"
-                    disabled={!skillInput.trim()}
-                    className="absolute right-3 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl flex items-center gap-2 shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95"
-                  >
-                    Generate <ArrowRight className="w-4 h-4" />
-                  </button>
                 </div>
+
+                {/* Level selector */}
+                <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm">
+                  <p className="text-sm font-semibold text-foreground mb-3">Your current level</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {LEVELS.map((level) => (
+                      <button
+                        key={level}
+                        type="button"
+                        onClick={() => setSelectedLevel(level)}
+                        className={cn(
+                          "px-3 py-3 rounded-xl border-2 text-sm font-semibold transition-all duration-200 flex flex-col items-center gap-1",
+                          selectedLevel === level
+                            ? "border-primary bg-primary/5 text-primary shadow-sm"
+                            : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+                        )}
+                      >
+                        <span className="text-base">
+                          {level === "beginner" ? "🌱" : level === "intermediate" ? "⚡" : "🔥"}
+                        </span>
+                        {LEVEL_LABELS[level]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={!skillInput.trim()}
+                  className="w-full py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98]"
+                >
+                  Generate Roadmap <ArrowRight className="w-5 h-5" />
+                </button>
+
                 {error && (
-                  <p className="absolute -bottom-8 left-0 text-destructive text-sm font-medium">
+                  <p className="text-destructive text-sm font-medium text-center">
                     Failed to generate roadmap. Please try again.
                   </p>
                 )}
@@ -189,7 +218,7 @@ export default function Learn() {
             </motion.div>
           )}
 
-          {/* ── Loading state ── */}
+          {/* ── Loading ── */}
           {isPending && (
             <motion.div
               key="loading"
@@ -208,13 +237,13 @@ export default function Learn() {
                 Crafting your roadmap...
               </h2>
               <p className="mt-2 text-muted-foreground">
-                Building the best path for "{skillInput}"
+                Building the best {selectedLevel} path for "{skillInput}"
               </p>
             </motion.div>
           )}
 
-          {/* ── Roadmap state ── */}
-          {allTasks.length > 0 && !isPending && (
+          {/* ── Roadmap view ── */}
+          {hasRoadmap && !isPending && entry && (
             <motion.div
               key="roadmap"
               initial={{ opacity: 0, y: 20 }}
@@ -222,26 +251,40 @@ export default function Learn() {
               className="w-full flex flex-col"
             >
               {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
                 <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-sm font-semibold mb-3">
-                    <Sparkles className="w-4 h-4" />
-                    AI Generated
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-sm font-semibold">
+                      <Sparkles className="w-4 h-4" />
+                      AI Generated
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${LEVEL_COLORS[entry.level]}`}>
+                      {LEVEL_LABELS[entry.level]}
+                    </span>
                   </div>
                   <h1 className="text-3xl md:text-4xl font-display font-extrabold text-foreground">
-                    {currentSkill}
+                    {entry.skill}
                   </h1>
                 </div>
-                <button
-                  onClick={handleReset}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80 rounded-lg transition-colors self-start sm:self-auto"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  Start Over
-                </button>
+                <div className="flex gap-2 self-start">
+                  <button
+                    onClick={() => navigate("/dashboard")}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80 rounded-lg transition-colors"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    Dashboard
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80 rounded-lg transition-colors"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    New Skill
+                  </button>
+                </div>
               </div>
 
-              {/* Progress */}
+              {/* Progress card */}
               <div className="bg-card border border-border/60 rounded-3xl p-6 sm:p-8 shadow-xl shadow-black/5 mb-8">
                 <ProgressBar
                   progress={progress}
@@ -254,12 +297,12 @@ export default function Learn() {
                     animate={{ opacity: 1, height: "auto", marginTop: 24 }}
                     className="p-4 bg-green-50 border border-green-200 rounded-xl text-green-800 text-center font-medium"
                   >
-                    🎉 Congratulations! You've completed your full roadmap for {currentSkill}.
+                    🎉 Congratulations! You've completed your full {entry.level} roadmap for {entry.skill}.
                   </motion.div>
                 )}
               </div>
 
-              {/* ── Current Task ── */}
+              {/* Current Task */}
               {currentTask && (
                 <div className="mb-8">
                   <div className="flex items-center justify-between mb-4">
@@ -292,7 +335,7 @@ export default function Learn() {
                 </div>
               )}
 
-              {/* ── Completed Tasks ── */}
+              {/* Completed Tasks */}
               {completedTasks.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
@@ -306,7 +349,6 @@ export default function Learn() {
                       {completedTasks.length}
                     </span>
                   </div>
-
                   <div className="space-y-2">
                     {completedTasks.map((task, index) => (
                       <CompletedTaskCard key={task.id} title={task.title} index={index} />

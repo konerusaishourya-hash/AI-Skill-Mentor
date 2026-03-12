@@ -9,9 +9,23 @@ export interface HealthStatus {
   status: string;
 }
 
+/**
+ * The user's current level for this skill
+ */
+export type GenerateRoadmapRequestLevel =
+  (typeof GenerateRoadmapRequestLevel)[keyof typeof GenerateRoadmapRequestLevel];
+
+export const GenerateRoadmapRequestLevel = {
+  beginner: "beginner",
+  intermediate: "intermediate",
+  advanced: "advanced",
+} as const;
+
 export interface GenerateRoadmapRequest {
   /** The skill the user wants to learn */
   skill: string;
+  /** The user's current level for this skill */
+  level: GenerateRoadmapRequestLevel;
 }
 
 export interface RoadmapTask {
@@ -26,5 +40,6 @@ export interface RoadmapTask {
 
 export interface GenerateRoadmapResponse {
   skill: string;
+  level: string;
   tasks: RoadmapTask[];
 }

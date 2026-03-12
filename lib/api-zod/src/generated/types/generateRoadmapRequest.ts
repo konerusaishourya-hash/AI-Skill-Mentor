@@ -5,8 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { GenerateRoadmapRequestLevel } from "./generateRoadmapRequestLevel";
 
 export interface GenerateRoadmapRequest {
   /** The skill the user wants to learn */
   skill: string;
+  /** The user's current level for this skill */
+  level: GenerateRoadmapRequestLevel;
 }

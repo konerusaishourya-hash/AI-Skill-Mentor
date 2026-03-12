@@ -7,6 +7,7 @@
  */
 
 export * from "./generateRoadmapRequest";
+export * from "./generateRoadmapRequestLevel";
 export * from "./generateRoadmapResponse";
 export * from "./healthStatus";
 export * from "./roadmapTask";

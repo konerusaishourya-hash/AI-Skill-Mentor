@@ -9,5 +9,6 @@ import type { RoadmapTask } from "./roadmapTask";
 
 export interface GenerateRoadmapResponse {
   skill: string;
+  level: string;
   tasks: RoadmapTask[];
 }
